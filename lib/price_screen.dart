@@ -1,5 +1,6 @@
 import 'package:bitcoin_ticker/CryptoCurrency.dart';
 import 'package:bitcoin_ticker/coin_data.dart';
+import 'package:bitcoin_ticker/exchange_rate_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
@@ -12,10 +13,11 @@ class PriceScreen extends StatefulWidget {
 class _PriceScreenState extends State<PriceScreen> {
   String selectedCurrency = currenciesList.elementAt(0);
   String cryptoCurrency = 'BTC';
+  bool isLoading = true;
 
-  double btcPrice;
-  double ethPrice;
-  double solPrice;
+  String btcPrice;
+  String ethPrice;
+  String solPrice;
 
   @override
   void initState() {
@@ -24,10 +26,15 @@ class _PriceScreenState extends State<PriceScreen> {
   }
 
   void getExchangeRate() async {
-    var price =
-        await CryptoCurrency().getCryptoPrice(cryptoCurrency, selectedCurrency);
+    var cryptoPrices = await CryptoCurrency().getCryptoPrice(selectedCurrency);
+    String btcRate = cryptoPrices.elementAt(0);
+    String ethRate = cryptoPrices.elementAt(1);
+    String solRate = cryptoPrices.elementAt(2);
     setState(() {
-      btcPrice = price;
+      btcPrice = btcRate.isNotEmpty ? btcRate : 'Error';
+      ethPrice = ethRate.isNotEmpty ? ethRate : 'Error';
+      solPrice = solRate.isNotEmpty ? solRate : 'Error';
+      isLoading = false;
     });
   }
 
@@ -35,9 +42,9 @@ class _PriceScreenState extends State<PriceScreen> {
     return CupertinoPicker(
       itemExtent: 32.0,
       onSelectedItemChanged: (selectedIndex) {
-        print(selectedIndex);
+        selectedCurrency = currenciesList.elementAt(selectedIndex);
         setState(() {
-          selectedCurrency = currenciesList.elementAt(selectedIndex);
+          isLoading = true;
           getExchangeRate();
         });
       },
@@ -56,9 +63,11 @@ class _PriceScreenState extends State<PriceScreen> {
           value: currency,
         );
       }).toList(),
-      onChanged: (value) {
+      onChanged: (selectedIndex) {
+        selectedCurrency = currenciesList.elementAt(selectedIndex);
         setState(() {
-          selectedCurrency = value;
+          isLoading = true;
+          getExchangeRate();
         });
       },
     );
@@ -74,26 +83,16 @@ class _PriceScreenState extends State<PriceScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(18.0, 18.0, 18.0, 0),
-            child: Card(
-              color: Colors.lightBlueAccent,
-              elevation: 5.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
-                child: Text(
-                  '1 BTC = $btcPrice $selectedCurrency',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ExchangeRateCard(cryptoList.elementAt(0), btcPrice,
+                  selectedCurrency, isLoading),
+              ExchangeRateCard(cryptoList.elementAt(1), ethPrice,
+                  selectedCurrency, isLoading),
+              ExchangeRateCard(cryptoList.elementAt(2), solPrice,
+                  selectedCurrency, isLoading),
+            ],
           ),
           Container(
             height: 150.0,
